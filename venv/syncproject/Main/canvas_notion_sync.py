@@ -1,33 +1,54 @@
+"""
+Canvas to Notion Sync Script - 07/14/2025
+-------------------------------
+This Python script automatically pulls assignment data from a user's Canvas LMS and sends it to a Notion database.
+
+Features:
+- Canvas API authentication
+- Notion API integration
+- Filters out existing assignments to avoid duplicates
+- Converts due dates to Pacific Time (US/Pacific, UT-7)
+
+Setup Requirements:
+- A Notion database with the following properties: Assignment Name (title), Course (rich_text), Due Date (date), Status (select), Points (rich_text), Notes (rich_text)
+- Canvas API token and Canvas URL (e.g., 'https://school.instructure.com/api/v1')
+- Notion integration token and Database ID
+
+Notes:
+- The script assumes your Notion database has specific property names (listed above). These must match exactly or errors will occur.
+- Limitation is Professors updating assignment due dates, points, etc. The code skips the assignment if the name is identical
+- Future updates would include way to check if assignment information is correct everytime script is run, and updating information if incorrect
+"""
+
 # Imports
 import requests
 from datetime import datetime
 import pytz
 
 # Tokens
-CANVAS_TOKEN = "9~MrXR6fXZcYQ66MeZnZT8am8CD7yzPKBWx3U24eCvNQWrvFKwUvnTKvNmTvemLPkz"
-CANVAS_URL = "https://bc.instructure.com/api/v1" # remember not bellevuecollege, it is bc
-NOTION_TOKEN = "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"  
-DATABASE_ID = "22dff8a7148c8067975fcf2521925911"
+CANVAS_TOKEN = "Your Canvas Token"
+CANVAS_URL = "Your Canvas API Url"
+NOTION_TOKEN = "Your Notion Token"  
+DATABASE_ID = "Your Notion Table ID"
 
 # Headers
 notion_headers = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
     "Content-Type": "application/json",
-    "Notion-Version": "2022-06-28"
+    "Notion-Version": "" # doesn't exactly matter Notion Version
 }
 canvas_headers = {
     "Authorization": f"Bearer {CANVAS_TOKEN}"
 }
 
-# Functions
-### Grabbing courses
+# Gets list of Canvas Courses using API
 def get_courses():
     response = requests.get(f"{CANVAS_URL}/courses", headers=canvas_headers)
     if response.status_code != 200:
         print("Error fetching courses:", response.status_code, response.json())
         return []
     return response.json()
-### Grabbing Assignments
+# Gets a list of assignments from a specific Course ID on Canvas
 def get_assignments(course_id):
     response = requests.get(f"{CANVAS_URL}/courses/{course_id}/assignments", headers=canvas_headers)
     url = f"{CANVAS_URL}/courses/{course_id}/assignments?include[]=submission"
@@ -36,12 +57,12 @@ def get_assignments(course_id):
         print(f"Error fetching assignments for course {course_id}:", response.status_code)
         return []
     return response.json()
-### Sending data to notion
+# Sends an assignment to the Notion database table with relavant information
 def send_to_notion(course_name, assignment_name, due_datetime, points="", notes=""):
     if notes is None:
         notes = "No Description"
-
-    notion_payload = {
+    # DB Headers: Assignment Name(title), Course(rich_text), Due Date(date), Status(select), Points(rich_text), Notes(rich_text)
+    notion_payload = { 
         "parent": { "database_id": DATABASE_ID },
         "properties": {
             "Assignment Name": {
@@ -70,10 +91,10 @@ def send_to_notion(course_name, assignment_name, due_datetime, points="", notes=
                 }]
             },
             "Notes": {
-                "rich_text": [{
-                    "text": { "content": notes[:200] }
-                }]
-            }
+                "rich_text": [
+                    "text": {"content": "" }
+                ]
+            } # Left blank in Notion but still leaves a string, not completely empty
         }
     }
     response = requests.post(
@@ -83,10 +104,10 @@ def send_to_notion(course_name, assignment_name, due_datetime, points="", notes=
     )
 
     if response.status_code != 200:
-        print(f"❌ Failed to add {assignment_name} to Notion:", response.status_code, response.text)
+        print(f"❌ Failed: {assignment_name}:", response.status_code, response.text)
     else:
         print(f"✅ Added: {assignment_name}")
-### Checking if assignment is already in Notion
+# Checking if assignment is already in Notion
 def get_existing_assignments():
     url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
     existing = set()
@@ -114,7 +135,7 @@ def get_existing_assignments():
         next_cursor = data.get("next_cursor", None)
 
     return existing
-### Full function
+# Pulls all assignments from Canvas and sends them to the Notion DB
 def pull_all_assignments():
     print("\n=== Pulling Assignments ===")
     existing_assignments = get_existing_assignments()
@@ -129,7 +150,7 @@ def pull_all_assignments():
         for a in assignments:
             if a['workflow_state'] != 'published' or not a['due_at']:
                 continue
-            normalized_key = (course_name.strip().lower(), a['name'].strip().lower())
+            normalized_key = (course_name.strip().lower(), a['name'].strip().lower()) # Checking and Skipping existing assignmnets
             if normalized_key in {(c.strip().lower(), t.strip().lower()) for (c, t) in existing_assignments}:
                 print(f"🔁 Skipping existing: {a['name']}")
                 continue
@@ -141,7 +162,7 @@ def pull_all_assignments():
             points_possible = a.get("points_possible", 0)
             submission = a.get("submission")
 
-            if submission:
+            if submission: # Determining assignment submission type
                 submitted_at = submission.get("submitted_at")
                 score = submission.get("score")
                 missing = submission.get("missing")
@@ -172,5 +193,5 @@ def pull_all_assignments():
             )
 
 
-# Run the sync
+# Run
 pull_all_assignments()

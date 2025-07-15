@@ -2,8 +2,8 @@ import requests
 from datetime import datetime
 
 #Tokens
-NOTION_TOKEN = "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"  
-DATABASE_ID = "22dff8a7148c8067975fcf2521925911" # From Notion url, after last / and before ?
+NOTION_TOKEN = "Your notion token"  
+DATABASE_ID = "Notion table DB" # From Notion url, after last / and before ?
 
 # Notion API headers
 headers = {
@@ -23,7 +23,7 @@ new_page_data = {
         },
         "Course": {
             "rich_text": [{
-                "text": { "content": "PHIL&101" }
+                "text": { "content": "Test Course" }
             }]
         },
         "Due Date": {
@@ -38,19 +38,19 @@ new_page_data = {
         },
         "Notes": {
             "rich_text": [{
-                "text": { "content": "This is a test sync from Python." }
+                "text": { "content": "This is a test sync" }
             }]
         }
     }
 }
 
-# Request to Notion to make new page
+# Req notion to make a new assignment page
 response = requests.post(
     "https://api.notion.com/v1/pages",
     headers=headers,
     json=new_page_data
 )
 
-# Print the result
+# Print the result in term
 print("Status:", response.status_code)
 print("Response:", response.json())
