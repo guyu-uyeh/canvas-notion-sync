@@ -1,4 +1,4 @@
-# 🎓 Canvas to Notion Sync
+# Canvas to Notion Sync
 
 This Python script automatically pulls assignment data from a user's **Canvas LMS** and adds it to a custom **Notion database**. It helps students centralize, organize, and track upcoming assignments from multiple courses in Notion.
 
@@ -13,7 +13,7 @@ This Python script automatically pulls assignment data from a user's **Canvas LM
 
 ---
 
-## 🛠 Requirements
+## Requirements
 
 - Python 3.9+
 - A Canvas API token and Canvas API base URL (e.g., `https://school.instructure.com/api/v1`)
@@ -69,7 +69,7 @@ The script does the following:
 
 ---
 
-##️ Optional: Automate with macOS Launch Agent
+## Optional: Automate with macOS Launch Agent
 
 You can run this script automatically on login or every X minutes using macOS Launch Agents.
 
